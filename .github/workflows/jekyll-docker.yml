@@ -1,0 +1,92 @@
+import express from "express";
+import cors from "cors";
+import OpenAI from "openai";
+
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+app.use(cors());
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    name: "Kedrick AI Backend",
+    developer: "Kedrick Nkole",
+    status: "online"
+  });
+});
+
+app.get("/health", (req, res) => {
+  res.json({
+    ok: true,
+    status: "healthy"
+  });
+});
+
+app.post("/api/kedrick-ai", async (req, res) => {
+  try {
+    const { question } = req.body;
+
+    if (!question) {
+      return res.status(400).json({
+        error: "Question is required"
+      });
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: "OPENAI_API_KEY is not configured"
+      });
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+
+    const response = await openai.responses.create({
+      model: process.env.OPENAI_MODEL || "gpt-5-mini",
+
+      instructions: `
+You are Kedrick AI, developed by Kedrick Nkole.
+
+You are a nursing education assistant specializing in:
+- Nursing
+- Medicine
+- Pharmacology
+- Paediatrics
+- Midwifery
+- Psychiatry
+- Community health
+
+Give clear, structured explanations suitable for nursing students.
+
+For medicines, dosages, emergencies and clinical decisions,
+always advise the user to verify information against current
+approved guidelines and facility protocols.
+
+Do not invent references.
+      `,
+
+      input: question
+    });
+
+    res.json({
+      answer: response.output_text,
+      developer: "Kedrick Nkole",
+      application: "Kedrick AI"
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      error: "Kedrick AI backend error",
+      message: error.message
+    });
+  }
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Kedrick AI running on port ${PORT}`);
+});
